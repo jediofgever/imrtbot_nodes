@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="icons">
+        <file alias="nmbu_gamepad_3.png">nmbu_gamepad_3.png</file>
+        <file alias="nmbu_robotics.png">nmbu_robotics.png</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <node pkg="imrt_virtual_joy" type="virtual_gamepad" name="virtual_gamepad" />
+
+  <node pkg="imrt_teleop" type="imrt_teleop" name="imrt_teleop">
+    <remap from="teleop/cmd_vel" to="/imrt_velocity_controller/cmd_vel" />
+  </node>
+
+</launch>
