@@ -1,1 +1,1 @@
-from gamepad import main
+from .gamepad import main

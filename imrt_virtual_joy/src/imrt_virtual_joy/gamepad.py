@@ -13,8 +13,8 @@ from __future__ import print_function
 import rospy
 from sensor_msgs.msg import Joy
 from PyQt5 import QtCore, QtGui, QtWidgets
-from joystick import Joystick
-import resources
+from .joystick import Joystick
+#import resources
 import sys
 
 
