@@ -10,22 +10,24 @@
 
 
 from __future__ import print_function
-import rospy
+import rclpy
+import rclpy.node
+
 from sensor_msgs.msg import Joy
 from PyQt5 import QtCore, QtGui, QtWidgets
 from .joystick import Joystick
-#import resources
+
+# import resources
 import sys
 
 
 class GamePad(QtWidgets.QMainWindow):
-
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super(GamePad, self).__init__(parent)
 
         # Autorepeat
         self._autorepeat = True
-        autorepeat_rate = 50 # Hz
+        autorepeat_rate = 50  # Hz
 
         # Axes and button members
         self._axes = []
@@ -36,13 +38,13 @@ class GamePad(QtWidgets.QMainWindow):
         button_cols = 3
 
         # Window setup
-        self.setWindowTitle('NMBU Virtual Gamepad')
-        self.setWindowIcon(QtGui.QIcon(':/icons/nmbu_gamepad_3.png'))
+        self.setWindowTitle("NMBU Virtual Gamepad")
+        self.setWindowIcon(QtGui.QIcon(":/icons/nmbu_gamepad_3.png"))
         self.setFixedSize(400, 195)
 
         # Logo
         logo_label = QtWidgets.QLabel()
-        pixmap = QtGui.QPixmap(':/icons/nmbu_robotics.png')
+        pixmap = QtGui.QPixmap(":/icons/nmbu_robotics.png")
         logo_label.setPixmap(pixmap)
         logo_layout = QtWidgets.QHBoxLayout()
         logo_layout.addWidget(logo_label, alignment=QtCore.Qt.AlignHCenter)
@@ -53,7 +55,7 @@ class GamePad(QtWidgets.QMainWindow):
             self._joys.append(Joystick())
             self._joys[i].set_id(i)
             self._joys[i].stick_change.connect(self._joy_event)
-            self._axes.extend([0, 0])
+            self._axes.extend([0.0, 0.0])
 
         # Normal buttons
         middle_layout = QtWidgets.QVBoxLayout()
@@ -64,12 +66,12 @@ class GamePad(QtWidgets.QMainWindow):
 
         for i in range(button_rows):
             for j in range(button_cols):
-                button = QtWidgets.QPushButton('B{}'.format(i*button_cols + j + 1))
-                button.setFont(QtGui.QFont('Arial', 9))
-                self._button_group.addButton(button, i*button_cols + j)
+                button = QtWidgets.QPushButton("B{}".format(i * button_cols + j + 1))
+                button.setFont(QtGui.QFont("Arial", 9))
+                self._button_group.addButton(button, i * button_cols + j)
                 button_layout.addWidget(button, i, j)
                 self._buttons.append(False)
-        
+
         middle_layout.addLayout(button_layout)
         self._button_group.buttonPressed.connect(self._button_event)
         self._button_group.buttonReleased.connect(self._button_event)
@@ -77,18 +79,18 @@ class GamePad(QtWidgets.QMainWindow):
         # Special buttons
         s_button_layout = QtWidgets.QHBoxLayout()
 
-        self._link_button = QtWidgets.QPushButton('Link\nSticks')
+        self._link_button = QtWidgets.QPushButton("Link\nSticks")
         self._link_button.setCheckable(True)
-        self._link_button.setFont(QtGui.QFont('Arial', 7))
-        self._link_button.setStyleSheet('background-color: #D08770')
+        self._link_button.setFont(QtGui.QFont("Arial", 7))
+        self._link_button.setStyleSheet("background-color: #D08770")
         self._buttons.append(False)
         self._link_button.clicked.connect(self._link_event)
         s_button_layout.addWidget(self._link_button)
 
-        self._sticky_button = QtWidgets.QPushButton('Sticky\nSticks')
+        self._sticky_button = QtWidgets.QPushButton("Sticky\nSticks")
         self._sticky_button.setCheckable(True)
-        self._sticky_button.setFont(QtGui.QFont('Arial', 7))
-        self._sticky_button.setStyleSheet('background-color: #D08770')
+        self._sticky_button.setFont(QtGui.QFont("Arial", 7))
+        self._sticky_button.setStyleSheet("background-color: #D08770")
         self._buttons.append(False)
         self._sticky_button.clicked.connect(self._sticky_axes_event)
         s_button_layout.addWidget(self._sticky_button)
@@ -116,33 +118,32 @@ class GamePad(QtWidgets.QMainWindow):
             self._timer.start()
 
         # ROS
-        self._joy_pub = rospy.Publisher('joy', Joy, queue_size=1)
-        rospy.loginfo('Virtual gamepad started')
+        rclpy.init()
+        self.node = rclpy.create_node("joy")
+        self._joy_pub = self.node.create_publisher(Joy, "joy", 1)
+        self.node.get_logger().info("Virtual gamepad started")
 
         # Show window
         self.show()
 
-
     def _joy_event(self, up_value, side_value):
         id = self.sender().get_id()
-        if self._link_button.isChecked(): 
+        if self._link_button.isChecked():
             self._axes[0::2] = [up_value for value in self._axes[0::2]]
             self._axes[1::2] = [side_value for value in self._axes[1::2]]
             for joy in self._joys:
                 joy.set_value(up_value, side_value)
         else:
-            self._axes[id*2] = up_value
-            self._axes[id*2 + 1] = side_value
+            self._axes[id * 2] = up_value
+            self._axes[id * 2 + 1] = side_value
         if not self._autorepeat:
             self._output_data()
 
-    
     def _button_event(self, button):
         id = self.sender().id(button)
         self._buttons[id] = button.isDown()
         if not self._autorepeat:
             self._output_data()
-        
 
     def _sticky_axes_event(self, value):
         self._buttons[-1] = value
@@ -150,7 +151,6 @@ class GamePad(QtWidgets.QMainWindow):
             joy.set_sticky(value)
         if not self._autorepeat:
             self._output_data()
-            
 
     def _link_event(self, value):
         self._buttons[-2] = value
@@ -159,28 +159,20 @@ class GamePad(QtWidgets.QMainWindow):
         if not self._autorepeat:
             self._output_data()
 
-
     def _loop_event(self):
         self._output_data()
 
-
     def _output_data(self):
-        print('Axes:', end='')
-        print(['{:+0.2f}'.format(axis) for axis in self._axes], end=';')
-        print('Buttons:', end='')
-        print(['{:d}'.format(button) for button in self._buttons])
-        sys.stdout.flush()
-
         # ROS
         joy_msg = Joy()
         joy_msg.axes = self._axes
         joy_msg.buttons = self._buttons
         self._joy_pub.publish(joy_msg)
 
+        rclpy.spin_once(self.node, timeout_sec=0.1)
+
 
 def main():
-    rospy.init_node('virtual_gamepad')
-    rospy.logdebug('# Qt version: ' + QtCore.QT_VERSION_STR)
     app = QtWidgets.QApplication([])
     app.setStyleSheet(
         """
@@ -189,8 +181,9 @@ def main():
                     border-radius: 20px;}
         QPushButton{background-color: #88C0D0;
                     color: #4C566A}
-        """)
+        """
+    )
 
     gamepad = GamePad()
-    
+
     app.exec_()

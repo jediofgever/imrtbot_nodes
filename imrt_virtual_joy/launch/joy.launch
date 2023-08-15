@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-
-<launch>
-  
-  <node pkg="imrt_virtual_joy" type="virtual_gamepad" name="virtual_gamepad" />
-  
-</launch>

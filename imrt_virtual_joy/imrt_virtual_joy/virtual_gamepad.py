@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
 import sys
+
 sys.dont_write_bytecode = True
 
-from imrt_virtual_joy import main
+from .submodule import main
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
