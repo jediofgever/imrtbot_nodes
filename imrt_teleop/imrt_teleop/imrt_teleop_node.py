@@ -28,7 +28,7 @@ class IMRTTeleop(rclpy.node.Node):
         self.create_subscription(Joy, "joy", self._joy_callback, 1)
         self.get_logger().info("IMRTTeleop started")
 
-        self.vx = 2.0
+        self.vx = 4.0
         self.wz = 1.0
 
     def _joy_callback(self, joy_msg):

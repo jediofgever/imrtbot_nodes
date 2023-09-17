@@ -14,6 +14,7 @@ import rclpy
 import rclpy.node
 
 from sensor_msgs.msg import Joy
+from std_srvs.srv import SetBool
 from PyQt5 import QtCore, QtGui, QtWidgets
 from .joystick import Joystick
 
@@ -123,6 +124,9 @@ class GamePad(QtWidgets.QMainWindow):
         self._joy_pub = self.node.create_publisher(Joy, "joy", 1)
         self.node.get_logger().info("Virtual gamepad started")
 
+        # Create a Bool service to enable/disable the gamepad
+        self.button1 = self.node.create_client(SetBool, "take_snapshot_non_traversable")
+        self.button2 = self.node.create_client(SetBool, "take_snapshot_traversable")
         # Show window
         self.show()
 
@@ -168,6 +172,18 @@ class GamePad(QtWidgets.QMainWindow):
         joy_msg.axes = self._axes
         joy_msg.buttons = self._buttons
         self._joy_pub.publish(joy_msg)
+
+        # If button1 is pressed, enable the gamepad
+        if self._buttons[0]:
+            self.node.get_logger().info("Button 1 pressed")
+            req = SetBool.Request()
+            req.data = True
+            self.button1.call_async(req)
+        if self._buttons[1]:
+            self.node.get_logger().info("Button 2 pressed")
+            req = SetBool.Request()
+            req.data = True
+            self.button2.call_async(req)
 
         rclpy.spin_once(self.node, timeout_sec=0.1)
 
